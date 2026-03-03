@@ -1,5 +1,6 @@
 package com.codeit.notification.service;
 
+import com.codeit.notification.controller.NotificationController;
 import com.codeit.notification.entity.Notification;
 import com.codeit.notification.entity.NotificationType;
 import com.codeit.notification.repository.NotificationRepository;
@@ -21,23 +22,27 @@ public class NotificationService {
     private final SseEmitterService sseEmitterService;
 
     @Transactional
-    public void createAndSendNotification(String userId, NotificationType type, String title, String message) {
+    public Notification createAndSendNotification(String userId, NotificationType type, String title, String message) {
 
         // 알림 객체 생성 -> DB 저장
         Notification notification = Notification.create(userId, type, title, message);
         notification = notificationRepository.save(notification);
 
         sendNotificationToUser(userId, notification);
+
+        return notification;
     }
 
     @Transactional
-    public void createAndSendNotificationWithLink(String userId, NotificationType type, String title, String message, String link) {
+    public Notification createAndSendNotificationWithLink(String userId, NotificationType type, String title, String message, String link) {
 
         // 알림 객체 생성 -> DB 저장
         Notification notification = Notification.createWithLink(userId, type, title, message, link);
         notification = notificationRepository.save(notification);
 
         sendNotificationToUser(userId, notification);
+
+        return notification;
     }
 
     /**
@@ -138,5 +143,20 @@ public class NotificationService {
         LocalDateTime cutoffDate = LocalDateTime.now().minusDays(daysToKeep);
         notificationRepository.deleteByReadTrueAndCreatedAtBefore(cutoffDate);
         log.info("오래된 알림 정리 완료 - 기준일: {}", cutoffDate);
+    }
+
+    public void broadcastAnnouncement(NotificationController.AnnouncementRequest request) {
+
+        Notification announcement = Notification.builder()
+                .userId("ALL")
+                .type(NotificationType.ANNOUNCEMENT)
+                .title(request.title())
+                .message(request.message())
+                .read(false)
+                .createdAt(LocalDateTime.now())
+                .build();
+
+        notificationRepository.save(announcement);
+        sseEmitterService.broadcast("announcement", announcement);
     }
 }

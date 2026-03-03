@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SSE 실시간 알림 시스템</title>
+    <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+    <div class="container">
+        <!-- 헤더 -->
+        <header class="header">
+            <h1>🔔 실시간 알림 시스템</h1>
+            <div class="user-info">
+                <span id="userId">사용자: -</span>
+                <span class="badge" id="unreadCount">0</span>
+            </div>
+        </header>
+
+        <!-- 로그인 영역 -->
+        <div id="loginSection" class="section">
+            <h2>로그인</h2>
+            <div class="form-group">
+                <input type="text" id="userIdInput" placeholder="사용자 ID를 입력하세요" />
+                <button onclick="connect()" class="btn btn-primary">연결하기</button>
+            </div>
+        </div>
+
+        <!-- 알림 영역 -->
+        <div id="notificationSection" class="section" style="display: none;">
+            <!-- 연결 상태 -->
+            <div class="connection-status">
+                <span id="connectionStatus" class="status-disconnected">연결 안됨</span>
+            </div>
+
+            <!-- 필터 -->
+            <div class="filter-section">
+                <button onclick="filterNotifications('ALL')" class="btn btn-filter active" data-filter="ALL">
+                    전체
+                </button>
+                <button onclick="filterNotifications('SYSTEM')" class="btn btn-filter" data-filter="SYSTEM">
+                    시스템
+                </button>
+                <button onclick="filterNotifications('COMMENT')" class="btn btn-filter" data-filter="COMMENT">
+                    댓글
+                </button>
+                <button onclick="filterNotifications('LIKE')" class="btn btn-filter" data-filter="LIKE">
+                    좋아요
+                </button>
+                <button onclick="filterNotifications('FOLLOW')" class="btn btn-filter" data-filter="FOLLOW">
+                    팔로우
+                </button>
+                <button onclick="filterNotifications('MESSAGE')" class="btn btn-filter" data-filter="MESSAGE">
+                    메시지
+                </button>
+            </div>
+
+            <!-- 액션 버튼 -->
+            <div class="action-section">
+                <button onclick="markAllAsRead()" class="btn btn-secondary">모두 읽음</button>
+                <button onclick="loadNotifications()" class="btn btn-secondary">새로고침</button>
+                <button onclick="disconnect()" class="btn btn-danger">연결 종료</button>
+            </div>
+
+            <!-- 알림 목록 -->
+            <div class="notification-list" id="notificationList">
+                <p class="empty-message">알림이 없습니다.</p>
+            </div>
+        </div>
+
+        <!-- 테스트 영역 -->
+        <div id="testSection" class="section" style="display: none;">
+            <h2>알림 테스트</h2>
+            <div class="test-form">
+                <div class="form-group">
+                    <label>알림 타입:</label>
+                    <select id="notificationType">
+                        <option value="SYSTEM">시스템</option>
+                        <option value="COMMENT">댓글</option>
+                        <option value="LIKE">좋아요</option>
+                        <option value="FOLLOW">팔로우</option>
+                        <option value="MESSAGE">메시지</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>제목:</label>
+                    <input type="text" id="notificationTitle" placeholder="알림 제목" />
+                </div>
+                <div class="form-group">
+                    <label>내용:</label>
+                    <textarea id="notificationMessage" placeholder="알림 내용" rows="3"></textarea>
+                </div>
+                <button onclick="sendTestNotification()" class="btn btn-primary">테스트 알림 보내기</button>
+                <button onclick="sendBroadcast()" class="btn btn-warning">전체 공지 보내기</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="/js/notification.js"></script>
+</body>
+</html>
