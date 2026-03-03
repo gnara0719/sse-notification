@@ -25,6 +25,10 @@ public class SseEmitterService {
     // Key: userId, Value: SseEmitter
     private final Map<String, SseEmitter> emitters = new ConcurrentHashMap<>();
 
+    // 사용자별 마지막 활동 시간 저장소
+    // key: userId, Value: 마지막 활동 시간
+    private final Map<String, LocalDateTime> lastActivityTime = new ConcurrentHashMap<>();
+
     /**
      * SSE 연결 생성
      *
@@ -156,5 +160,51 @@ public class SseEmitterService {
      */
     public boolean isConnected(String userId) {
         return emitters.containsKey(userId);
+    }
+
+    /**
+     * 주기적으로 ping을 보내서 만료된 SseEmitter 객체를 삭제
+     * 매 30초마다 실행되며, 5분 이상 활동이 없는 연결을 정리합니다.
+     */
+    @Scheduled(fixedRate = 30000)
+    public void cleanUp() {
+        LocalDateTime now = LocalDateTime.now();
+
+        emitters.keySet().forEach(userId -> {
+            LocalDateTime lastActivity = lastActivityTime.get(userId);
+            if (lastActivity != null && lastActivity.plusMinutes(5).isBefore(now)) {
+                SseEmitter emitter = emitters.get(userId);
+                if (emitter != null) {
+                    emitter.complete();
+                    emitters.remove(userId);
+                    lastActivityTime.remove(userId);
+                    log.info("비활성 SSE 연결 정리 - 사용자: {}", userId);
+                }
+            }
+        });
+
+        // 모든 활성 연결에 ping 전송
+        ping();
+    }
+
+    // 최초 연결 혹은 만료 여부를 확인하기 위한 용도로 더미 이벤트를 보냄
+    public void ping() {
+
+        emitters.forEach((userId, emitter) -> {
+            try {
+                emitter.send(
+                        SseEmitter.event()
+                                .name("ping")
+                                .data("ping")
+                );
+                lastActivityTime.put(userId, LocalDateTime.now());
+                log.debug("ping 전송 성공 - 사용자: {}", userId);
+            } catch (IOException e) {
+                log.error("ping 전송 실패 - 사용자: {}", userId, e);
+                emitters.remove(userId);
+                lastActivityTime.remove(userId);
+                emitter.completeWithError(e);
+            }
+        });
     }
 }
